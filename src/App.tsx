@@ -231,7 +231,6 @@ export default function App() {
             padding: '6px'
           }}
         >
-          AI-Powered
           DJ Mix Analyzer & Transition Advisor
         </p>
       </div>
