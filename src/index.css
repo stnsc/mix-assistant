@@ -1,0 +1,23 @@
+:root {
+  font-family: "Space Grotesk", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  color-scheme: dark;
+  color: #f3f4f6;
+  background-color: #111111;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: url('./assets/background.png') no-repeat center center fixed;
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+}
