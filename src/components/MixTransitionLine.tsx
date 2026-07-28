@@ -99,8 +99,10 @@ export const MixTransitionLine: React.FC<MixTransitionLineProps> = ({ trackA, tr
             }}
           >
             {mix.bpmQuality === 'MATCHING'
-              ? `${mix.trackABpm} BPM`
-              : `${mix.trackABpm} ➔ ${mix.trackBBpm} (${mix.bpmDiff > 0 ? '+' : ''}${mix.bpmDiff.toFixed(0)} BPM)`}
+              ? mix.isHalfTime
+                ? `${mix.trackABpm} ↔ ${mix.trackBBpm}`
+                : `${mix.trackABpm} BPM`
+              : `${mix.trackABpm} → ${mix.trackBBpm} (${mix.bpmDiff > 0 ? '+' : ''}${Math.round(mix.bpmDiff)} BPM)`}
           </span>
         )}
 
@@ -117,7 +119,7 @@ export const MixTransitionLine: React.FC<MixTransitionLineProps> = ({ trackA, tr
           >
             {mix.trackAKey === mix.trackBKey
               ? mix.trackAKey
-              : `${mix.trackAKey} ↔ ${mix.trackBKey}`}
+              : `${mix.trackAKey} → ${mix.trackBKey}`}
           </span>
         )}
 
@@ -193,9 +195,13 @@ export const MixTransitionLine: React.FC<MixTransitionLineProps> = ({ trackA, tr
                   color:
                     mix.keyQuality === 'OFF_KEY'
                       ? '#ff2a5f'
-                      : mix.keyQuality === 'SAME_KEY' || mix.keyQuality === 'RELATIVE_KEY'
-                      ? '#00e676'
-                      : '#00e5ff',
+                      : mix.keyQuality === 'SAME_KEY' ||
+                          mix.keyQuality === 'RELATIVE_KEY' ||
+                          mix.keyQuality === 'ENERGY_BOOST'
+                        ? '#00e676'
+                        : mix.keyQuality === 'ENERGY_DROP'
+                          ? '#ffc857'
+                          : '#00e5ff',
                   fontWeight: 700,
                   fontSize: '11px',
                 }}
@@ -213,9 +219,13 @@ export const MixTransitionLine: React.FC<MixTransitionLineProps> = ({ trackA, tr
                 border: `1px solid ${
                   mix.keyQuality === 'OFF_KEY'
                     ? '#ff2a5f'
-                    : mix.keyQuality === 'SAME_KEY' || mix.keyQuality === 'RELATIVE_KEY'
-                    ? '#00e676'
-                    : '#00e5ff'
+                    : mix.keyQuality === 'SAME_KEY' ||
+                        mix.keyQuality === 'RELATIVE_KEY' ||
+                        mix.keyQuality === 'ENERGY_BOOST'
+                      ? '#00e676'
+                      : mix.keyQuality === 'ENERGY_DROP'
+                        ? '#ffc857'
+                        : '#00e5ff'
                 }`,
               }}
             >

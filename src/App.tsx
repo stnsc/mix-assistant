@@ -17,12 +17,19 @@ export default function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [loadedFromStorage, setLoadedFromStorage] = useState<boolean>(false);
+  // Skip the first autosave after restore — rewriting IndexedDB right after load
+  // can invalidate Firefox's lazy IDB-backed blob URLs mid-playback.
+  const skipNextSaveRef = useRef(false);
 
   // Playback state
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const tracksRef = useRef<Track[]>(tracks);
+  const playingTrackIdRef = useRef<number | null>(playingTrackId);
+  tracksRef.current = tracks;
+  playingTrackIdRef.current = playingTrackId;
 
   // Load Saved Tracks from Storage on Initial Mount
   useEffect(() => {
@@ -31,6 +38,7 @@ export default function App() {
       if (savedTracks.length > 0) {
         const maxId = Math.max(...savedTracks.map((t) => t.id), 0);
         nextId = maxId + 1;
+        skipNextSaveRef.current = true;
         setTracks(savedTracks);
       }
       setLoadedFromStorage(true);
@@ -41,6 +49,10 @@ export default function App() {
   // Auto-Save Tracks to Storage whenever tracks state updates (after initial load)
   useEffect(() => {
     if (!loadedFromStorage) return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
     const isAnalyzing = tracks.some((t) => t.analyzing);
     if (!isAnalyzing) {
       saveTracksToStorage(tracks);
@@ -56,6 +68,23 @@ export default function App() {
     };
 
     const handleEnded = () => {
+      const list = tracksRef.current;
+      const currentId = playingTrackIdRef.current;
+      const idx = list.findIndex((t) => t.id === currentId);
+      const next = idx >= 0 ? list[idx + 1] : undefined;
+
+      if (next?.url) {
+        audio.src = next.url;
+        audio.currentTime = 0;
+        setPlayingTrackId(next.id);
+        setCurrentTime(0);
+        setIsPlaying(true);
+        audio.play().catch(() => {
+          setIsPlaying(false);
+        });
+        return;
+      }
+
       setIsPlaying(false);
       setCurrentTime(0);
     };
@@ -179,22 +208,18 @@ export default function App() {
   }
 
   function handleSeekTrack(track: Track, ratio: number) {
-    if (!track.duration || !audioRef.current) return;
+    if (!track.duration || !track.url || !audioRef.current) return;
     const targetTime = ratio * track.duration;
 
     if (playingTrackId !== track.id) {
-      if (track.url) {
-        audioRef.current.src = track.url;
-        setPlayingTrackId(track.id);
-      }
+      audioRef.current.src = track.url;
+      setPlayingTrackId(track.id);
     }
     audioRef.current.currentTime = targetTime;
     setCurrentTime(targetTime);
-
-    if (!isPlaying) {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
+    // Changing src pauses the element — always resume from the seek point
+    audioRef.current.play();
+    setIsPlaying(true);
   }
 
   return (

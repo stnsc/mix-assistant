@@ -166,37 +166,41 @@ export async function loadTracksFromStorage(): Promise<PersistentTrack[]> {
     let tracks: PersistentTrack[] = [];
 
     if (records && records.length > 0) {
-      tracks = records.map((rec) => {
-        let url: string | undefined;
-        let blob: Blob | undefined = rec.audioBlob;
+      // Materialize IndexedDB blobs into memory-backed copies before createObjectURL.
+      // Firefox keeps IDB blobs as lazy file-backed refs; autosave's store.clear()
+      // invalidates them mid-playback (~5–20s). Chrome copies eagerly so it "works".
+      tracks = await Promise.all(
+        records.map(async (rec) => {
+          let url: string | undefined;
+          let blob: Blob | undefined = rec.audioBlob;
 
-        if (blob) {
-          const mimeType = getAudioMimeType(rec.name, blob.type);
-          if (blob.type !== mimeType) {
-            blob = new Blob([blob], { type: mimeType });
+          if (blob) {
+            const mimeType = getAudioMimeType(rec.name, blob.type);
+            const buffer = await blob.arrayBuffer();
+            blob = new Blob([buffer], { type: mimeType });
+            url = URL.createObjectURL(blob);
           }
-          url = URL.createObjectURL(blob);
-        }
 
-        return {
-          id: rec.id,
-          name: rec.name,
-          url,
-          _blob: blob,
-          file: blob
-            ? new File([blob], rec.name, { type: getAudioMimeType(rec.name, blob.type) })
-            : undefined,
-          bpm: rec.bpm,
-          key: rec.key,
-          scale: rec.scale,
-          keyLabel: rec.keyLabel,
-          camelot: rec.camelot,
-          genre: rec.genre,
-          peaks: rec.peaks,
-          duration: rec.duration,
-          analyzing: false,
-        };
-      });
+          return {
+            id: rec.id,
+            name: rec.name,
+            url,
+            _blob: blob,
+            file: blob
+              ? new File([blob], rec.name, { type: getAudioMimeType(rec.name, blob.type) })
+              : undefined,
+            bpm: rec.bpm,
+            key: rec.key,
+            scale: rec.scale,
+            keyLabel: rec.keyLabel,
+            camelot: rec.camelot,
+            genre: rec.genre,
+            peaks: rec.peaks,
+            duration: rec.duration,
+            analyzing: false,
+          };
+        })
+      );
     } else {
       // Fallback to localStorage metadata if IndexedDB returned no records
       const metaJson = localStorage.getItem(LOCALSTORAGE_KEY);

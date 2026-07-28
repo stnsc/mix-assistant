@@ -381,7 +381,9 @@ export default function SetlistTable({
   function handleAutoOptimize() {
     const sorted = optimizeSetlistOrder(tracks);
     onReorder(sorted);
-    setNotification('Setlist automatically reordered for optimal harmonic key & tempo transitions.');
+    setNotification(
+      'Setlist reordered for harmonic key & tempo fit, preferring a rising energy journey.'
+    );
     setTimeout(() => {
       setNotification(null);
     }, 4500);
